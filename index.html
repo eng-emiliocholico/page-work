@@ -43,14 +43,14 @@
         /* IMÁGENES - Expandir al máximo */
         #mediaDisplay img {
             width: 100vw;
-            height: 100vh;
+            height: auto;
             object-fit: cover;
             display: block;
         }
 
         /* VIDEOS - Expandir al máximo */
         #mediaDisplay video {
-            width: 100vw;
+            width: auto;
             height: 100vh;
             object-fit: cover;
             display: block;
@@ -224,8 +224,9 @@
                     // 🎯 AGREGA TUS ARCHIVOS AQUÍ
                     this.mediaFiles = [
                         // Imágenes
-                        { name: 'imagen1.jpg', type: 'image', path: 'imagenes/imagen1.jpg' },
+                        { name: 'imagen1.png', type: 'image', path: 'imagenes/imagen1.png' },
                         { name: 'imagen2.png', type: 'image', path: 'imagenes/imagen2.png' },
+                        { name: 'imagen13.jpg', type: 'image', path: 'imagenes/imagen13.jpg' },
                         { name: 'foto1.webp', type: 'image', path: 'imagenes/foto1.webp' },
                         
                         // Videos  
@@ -317,7 +318,7 @@
                 video.src = file.path;
                 video.controls = false;
                 video.autoplay = true;
-                video.muted = true;
+                video.muted = false;
                 video.playsInline = true;
                 
                 video.setAttribute('playsinline', '');
@@ -483,3 +484,4 @@
     </script>
 </body>
 </html>
+
