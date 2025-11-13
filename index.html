@@ -177,302 +177,333 @@
     </div>
 
     <script>
-        class MediaPlayer {
-            constructor() {
-                this.mediaFiles = [];
-                this.currentIndex = 0;
-                this.isPlaying = true;
-                this.currentMedia = null;
-                this.slideInterval = null;
-                this.slideDuration = 5000;
-                this.videoEndedHandler = null;
+    class MediaPlayer {
+        constructor() {
+            this.mediaFiles = [];
+            this.currentIndex = 0;
+            this.isPlaying = true;
+            this.currentMedia = null;
+            this.slideInterval = null;
+            this.slideDuration = 5000;
+            this.videoEndedHandler = null;
 
-                this.initializeElements();
-                this.enterFullScreen();
-                this.loadMediaFiles();
-                this.setupEventListeners();
-            }
+            this.initializeElements();
+            this.enterFullScreen();
+            this.loadMediaFiles();
+            this.setupEventListeners();
+        }
 
-            initializeElements() {
-                this.container = document.getElementById('container');
-                this.mediaDisplay = document.getElementById('mediaDisplay');
-                this.controls = document.getElementById('controls');
-                this.prevBtn = document.getElementById('prevBtn');
-                this.playPauseBtn = document.getElementById('playPauseBtn');
-                this.nextBtn = document.getElementById('nextBtn');
-                this.loading = document.getElementById('loading');
-                this.fileCounter = document.getElementById('fileCounter');
-                this.touchLeft = document.getElementById('touchLeft');
-                this.touchCenter = document.getElementById('touchCenter');
-                this.touchRight = document.getElementById('touchRight');
-            }
+        initializeElements() {
+            this.container = document.getElementById('container');
+            this.mediaDisplay = document.getElementById('mediaDisplay');
+            this.controls = document.getElementById('controls');
+            this.prevBtn = document.getElementById('prevBtn');
+            this.playPauseBtn = document.getElementById('playPauseBtn');
+            this.nextBtn = document.getElementById('nextBtn');
+            this.loading = document.getElementById('loading');
+            this.fileCounter = document.getElementById('fileCounter');
+            this.touchLeft = document.getElementById('touchLeft');
+            this.touchCenter = document.getElementById('touchCenter');
+            this.touchRight = document.getElementById('touchRight');
+        }
 
-            async enterFullScreen() {
-                try {
-                    if (document.documentElement.requestFullscreen) {
-                        await document.documentElement.requestFullscreen();
-                    } else if (document.documentElement.webkitRequestFullscreen) {
-                        await document.documentElement.webkitRequestFullscreen();
-                    }
-                } catch (error) {
-                    console.log('Pantalla completa no disponible');
+        async enterFullScreen() {
+            try {
+                if (document.documentElement.requestFullscreen) {
+                    await document.documentElement.requestFullscreen();
+                } else if (document.documentElement.webkitRequestFullscreen) {
+                    await document.documentElement.webkitRequestFullscreen();
                 }
+            } catch (error) {
+                console.log('Pantalla completa no disponible');
             }
+        }
 
-            loadMediaFiles() {
-                try {
-                    // 🎯 AGREGA TUS ARCHIVOS AQUÍ
-                    this.mediaFiles = [
-                        // Imágenes
-                        { name: 'imagen1.png', type: 'image', path: 'imagenes/imagen1.png' },
-                        { name: 'imagen2.png', type: 'image', path: 'imagenes/imagen2.png' },
-                        { name: 'imagen13.jpg', type: 'image', path: 'imagenes/imagen13.jpg' },
-                        { name: 'foto1.webp', type: 'image', path: 'imagenes/foto1.webp' },
-                        
-                        // Videos  
-                        { name: 'video1.mp4', type: 'video', path: 'videos/video1.mp4' }
-                        
-                        // Agrega más archivos aquí...
-                    ];
-
-                    this.checkExistingFiles().then(existingFiles => {
-                        this.mediaFiles = existingFiles;
-                        
-                        if (this.mediaFiles.length > 0) {
-                            this.showInterface();
-                            this.updateFileCounter();
-                            this.loadCurrentMedia();
-                            this.startSlideshow();
-                        } else {
-                            this.showError('No se encontraron archivos. Verifica las rutas.');
-                        }
-                    });
-
-                } catch (error) {
-                    this.showError('Error al cargar archivos.');
-                }
-            }
-
-            async checkExistingFiles() {
-                const existingFiles = [];
-                
-                for (const file of this.mediaFiles) {
-                    try {
-                        const response = await fetch(file.path);
-                        if (response.status === 200) {
-                            existingFiles.push(file);
-                        }
-                    } catch (e) {
-                        console.log('Archivo no encontrado:', file.path);
-                    }
-                }
-                
-                return existingFiles;
-            }
-
-            showInterface() {
-                this.loading.classList.add('hidden');
-                this.container.classList.remove('hidden');
-            }
-
-            loadCurrentMedia() {
-                if (this.mediaFiles.length === 0) return;
-
-                const file = this.mediaFiles[this.currentIndex];
-                this.mediaDisplay.innerHTML = '';
-                this.controls.style.display = 'flex';
-
-                if (this.videoEndedHandler && this.currentMedia) {
-                    this.currentMedia.removeEventListener('ended', this.videoEndedHandler);
-                }
-
-                if (file.type === 'image') {
-                    this.loadImage(file);
-                } else if (file.type === 'video') {
-                    this.loadVideo(file);
-                }
-
-                this.updateFileCounter();
-            }
-
-            loadImage(file) {
-                const img = new Image();
-                img.onload = () => {
-                    this.currentMedia = img;
-                    this.mediaDisplay.appendChild(img);
+        loadMediaFiles() {
+            try {
+                // 🎯 AGREGA TUS ARCHIVOS AQUÍ
+                this.mediaFiles = [
+                    // Imágenes
+                    { name: 'imagen1.png', type: 'image', path: 'imagenes/imagen1.png' },
+                    { name: 'imagen2.png', type: 'image', path: 'imagenes/imagen2.png' },
+                    { name: 'imagen13.jpg', type: 'image', path: 'imagenes/imagen13.jpg' },
+                    { name: 'foto1.webp', type: 'image', path: 'imagenes/foto1.webp' },
                     
-                    if (this.isPlaying) {
+                    // Videos  
+                    { name: 'video1.mp4', type: 'video', path: 'videos/video1.mp4' }
+                    
+                    // Agrega más archivos aquí...
+                ];
+
+                this.checkExistingFiles().then(existingFiles => {
+                    this.mediaFiles = existingFiles;
+                    
+                    if (this.mediaFiles.length > 0) {
+                        this.showInterface();
+                        this.updateFileCounter();
+                        this.loadCurrentMedia();
                         this.startSlideshow();
+                    } else {
+                        this.showError('No se encontraron archivos. Verifica las rutas.');
                     }
-                };
-                img.onerror = () => {
+                });
+
+            } catch (error) {
+                this.showError('Error al cargar archivos.');
+            }
+        }
+
+        async checkExistingFiles() {
+            const existingFiles = [];
+            
+            for (const file of this.mediaFiles) {
+                try {
+                    const response = await fetch(file.path);
+                    if (response.status === 200) {
+                        existingFiles.push(file);
+                    }
+                } catch (e) {
+                    console.log('Archivo no encontrado:', file.path);
+                }
+            }
+            
+            return existingFiles;
+        }
+
+        showInterface() {
+            this.loading.classList.add('hidden');
+            this.container.classList.remove('hidden');
+        }
+
+        loadCurrentMedia() {
+            if (this.mediaFiles.length === 0) return;
+
+            const file = this.mediaFiles[this.currentIndex];
+            this.mediaDisplay.innerHTML = '';
+            this.controls.style.display = 'flex';
+
+            if (this.videoEndedHandler && this.currentMedia) {
+                this.currentMedia.removeEventListener('ended', this.videoEndedHandler);
+            }
+
+            if (file.type === 'image') {
+                this.loadImage(file);
+            } else if (file.type === 'video') {
+                this.loadVideo(file);
+            }
+
+            this.updateFileCounter();
+        }
+
+        loadImage(file) {
+            const img = new Image();
+            img.onload = () => {
+                this.currentMedia = img;
+                this.mediaDisplay.appendChild(img);
+                
+                // ✅ QUITAMOS el startSlideshow() de aquí para evitar conflictos
+                console.log('Imagen cargada:', file.name);
+            };
+            img.onerror = () => {
+                console.error('Error cargando imagen:', file.name);
+                this.nextMedia();
+            };
+            img.src = file.path;
+        }
+
+        loadVideo(file) {
+            this.stopSlideshow();
+            
+            const video = document.createElement('video');
+            video.src = file.path;
+            video.controls = false;
+            video.autoplay = true;
+            video.muted = false;
+            video.playsInline = true;
+            
+            video.setAttribute('playsinline', '');
+            video.setAttribute('webkit-playsinline', '');
+            
+            video.onloadeddata = () => {
+                this.currentMedia = video;
+                this.mediaDisplay.appendChild(video);
+
+                this.videoEndedHandler = () => {
+                    console.log('Video terminado, siguiente archivo');
                     this.nextMedia();
                 };
-                img.src = file.path;
-            }
+                video.addEventListener('ended', this.videoEndedHandler);
 
-            loadVideo(file) {
-                this.stopSlideshow();
-                
-                const video = document.createElement('video');
-                video.src = file.path;
-                video.controls = false;
-                video.autoplay = true;
-                video.muted = false;
-                video.playsInline = true;
-                
-                video.setAttribute('playsinline', '');
-                video.setAttribute('webkit-playsinline', '');
-                
-                video.onloadeddata = () => {
-                    this.currentMedia = video;
-                    this.mediaDisplay.appendChild(video);
-
-                    this.videoEndedHandler = () => {
-                        this.nextMedia();
-                    };
-                    video.addEventListener('ended', this.videoEndedHandler);
-
-                    video.play().then(() => {
-                        this.isPlaying = true;
-                        this.updatePlayPauseButton();
-                    }).catch(error => {
-                        this.nextMedia();
-                    });
-                };
-
-                video.onplay = () => {
+                video.play().then(() => {
                     this.isPlaying = true;
                     this.updatePlayPauseButton();
-                };
-
-                video.onpause = () => {
-                    this.isPlaying = false;
-                    this.updatePlayPauseButton();
-                };
-
-                video.onerror = () => {
+                    console.log('Video reproduciéndose:', file.name);
+                }).catch(error => {
+                    console.error('Error reproduciendo video:', error);
                     this.nextMedia();
-                };
-            }
+                });
+            };
 
-            startSlideshow() {
-                this.stopSlideshow();
-                if (this.mediaFiles[this.currentIndex]?.type === 'image') {
-                    this.slideInterval = setInterval(() => {
-                        this.nextMedia();
-                    }, this.slideDuration);
-                    this.isPlaying = true;
-                    this.updatePlayPauseButton();
-                }
-            }
+            video.onplay = () => {
+                this.isPlaying = true;
+                this.updatePlayPauseButton();
+            };
 
-            stopSlideshow() {
-                if (this.slideInterval) {
-                    clearInterval(this.slideInterval);
-                    this.slideInterval = null;
-                }
-            }
+            video.onpause = () => {
+                this.isPlaying = false;
+                this.updatePlayPauseButton();
+            };
 
-            togglePlayPause() {
-                const currentFile = this.mediaFiles[this.currentIndex];
-                
-                if (currentFile.type === 'image') {
-                    if (this.isPlaying) {
-                        this.stopSlideshow();
-                        this.isPlaying = false;
-                    } else {
-                        this.startSlideshow();
-                        this.isPlaying = true;
-                    }
-                } else if (currentFile.type === 'video') {
-                    const video = this.currentMedia;
-                    if (video.paused) {
-                        video.play().then(() => {
-                            this.isPlaying = true;
-                        });
-                    } else {
-                        video.pause();
-                        this.isPlaying = false;
-                    }
-                }
+            video.onerror = () => {
+                console.error('Error cargando video:', file.name);
+                this.nextMedia();
+            };
+        }
+
+        startSlideshow() {
+            this.stopSlideshow(); // ✅ Siempre detener antes de empezar
+            const currentFile = this.mediaFiles[this.currentIndex];
+            
+            if (currentFile && currentFile.type === 'image') {
+                console.log('Iniciando slideshow para:', currentFile.name);
+                this.slideInterval = setInterval(() => {
+                    console.log('Slideshow: avanzando al siguiente');
+                    this.nextMedia();
+                }, this.slideDuration);
+                this.isPlaying = true;
                 this.updatePlayPauseButton();
             }
+        }
 
-            nextMedia() {
+        stopSlideshow() {
+            if (this.slideInterval) {
+                console.log('Deteniendo slideshow');
+                clearInterval(this.slideInterval);
+                this.slideInterval = null;
+            }
+        }
+
+        togglePlayPause() {
+            const currentFile = this.mediaFiles[this.currentIndex];
+            
+            if (currentFile.type === 'image') {
+                if (this.isPlaying) {
+                    this.stopSlideshow();
+                    this.isPlaying = false;
+                } else {
+                    this.startSlideshow();
+                    this.isPlaying = true;
+                }
+            } else if (currentFile.type === 'video') {
+                const video = this.currentMedia;
+                if (video.paused) {
+                    video.play().then(() => {
+                        this.isPlaying = true;
+                    });
+                } else {
+                    video.pause();
+                    this.isPlaying = false;
+                }
+            }
+            this.updatePlayPauseButton();
+        }
+
+        nextMedia() {
+            console.log('Avanzando al siguiente archivo. Actual:', this.currentIndex);
             this.currentIndex = (this.currentIndex + 1) % this.mediaFiles.length;
+            console.log('Nuevo índice:', this.currentIndex);
             this.loadCurrentMedia();
+            
+            // ✅ SOLO iniciar slideshow si es imagen y está en modo reproducción
+            const nextFile = this.mediaFiles[this.currentIndex];
+            if (nextFile && nextFile.type === 'image' && this.isPlaying) {
+                // Pequeño delay para asegurar que la imagen se cargó
+                setTimeout(() => {
+                    this.startSlideshow();
+                }, 100);
+            }
         }
 
         prevMedia() {
+            console.log('Retrocediendo al archivo anterior. Actual:', this.currentIndex);
             this.currentIndex = this.currentIndex > 0 ? 
                 this.currentIndex - 1 : 
                 this.mediaFiles.length - 1;
+            console.log('Nuevo índice:', this.currentIndex);
             this.loadCurrentMedia();
-        }
-
-            updatePlayPauseButton() {
-                this.playPauseBtn.textContent = this.isPlaying ? '⏸' : '▶';
-            }
-
-            updateFileCounter() {
-                this.fileCounter.textContent = `${this.currentIndex + 1} / ${this.mediaFiles.length}`;
-            }
-
-            showError(message) {
-                this.loading.innerHTML = `
-                    <div style="color: #ff4444; text-align: center;">
-                        <h3>Error</h3>
-                        <p>${message}</p>
-                    </div>
-                `;
-            }
-
-            setupEventListeners() {
-                this.prevBtn.addEventListener('click', () => this.prevMedia());
-                this.nextBtn.addEventListener('click', () => this.nextMedia());
-                this.playPauseBtn.addEventListener('click', () => this.togglePlayPause());
-
-                document.addEventListener('keydown', (e) => {
-                    switch(e.key) {
-                        case 'ArrowLeft':
-                            this.prevMedia();
-                            break;
-                        case 'ArrowRight':
-                            this.nextMedia();
-                            break;
-                        case ' ':
-                            e.preventDefault();
-                            this.togglePlayPause();
-                            break;
-                        case 'Escape':
-                            e.preventDefault();
-                            break;
-                    }
-                });
-
-                this.touchLeft.addEventListener('click', () => this.prevMedia());
-                this.touchRight.addEventListener('click', () => this.nextMedia());
-                this.touchCenter.addEventListener('click', () => this.togglePlayPause());
-
-                let controlsTimeout;
-                const showControlsTemporarily = () => {
-                    this.controls.style.opacity = '1';
-                    clearTimeout(controlsTimeout);
-                    controlsTimeout = setTimeout(() => {
-                        this.controls.style.opacity = '0';
-                    }, 3000);
-                };
-
-                this.touchOverlay.addEventListener('click', showControlsTemporarily);
-
-                document.addEventListener('dblclick', () => {
-                    this.enterFullScreen();
-                });
+            
+            // ✅ SOLO iniciar slideshow si es imagen y está en modo reproducción
+            const prevFile = this.mediaFiles[this.currentIndex];
+            if (prevFile && prevFile.type === 'image' && this.isPlaying) {
+                // Pequeño delay para asegurar que la imagen se cargó
+                setTimeout(() => {
+                    this.startSlideshow();
+                }, 100);
             }
         }
 
-        window.addEventListener('load', () => {
+        updatePlayPauseButton() {
+            this.playPauseBtn.textContent = this.isPlaying ? '⏸' : '▶';
+        }
+
+        updateFileCounter() {
+            this.fileCounter.textContent = `${this.currentIndex + 1} / ${this.mediaFiles.length}`;
+        }
+
+        showError(message) {
+            this.loading.innerHTML = `
+                <div style="color: #ff4444; text-align: center;">
+                    <h3>Error</h3>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+
+        setupEventListeners() {
+            this.prevBtn.addEventListener('click', () => this.prevMedia());
+            this.nextBtn.addEventListener('click', () => this.nextMedia());
+            this.playPauseBtn.addEventListener('click', () => this.togglePlayPause());
+
+            document.addEventListener('keydown', (e) => {
+                switch(e.key) {
+                    case 'ArrowLeft':
+                        this.prevMedia();
+                        break;
+                    case 'ArrowRight':
+                        this.nextMedia();
+                        break;
+                    case ' ':
+                        e.preventDefault();
+                        this.togglePlayPause();
+                        break;
+                    case 'Escape':
+                        e.preventDefault();
+                        break;
+                }
+            });
+
+            this.touchLeft.addEventListener('click', () => this.prevMedia());
+            this.touchRight.addEventListener('click', () => this.nextMedia());
+            this.touchCenter.addEventListener('click', () => this.togglePlayPause());
+
+            let controlsTimeout;
+            const showControlsTemporarily = () => {
+                this.controls.style.opacity = '1';
+                clearTimeout(controlsTimeout);
+                controlsTimeout = setTimeout(() => {
+                    this.controls.style.opacity = '0';
+                }, 3000);
+            };
+
+            this.touchOverlay.addEventListener('click', showControlsTemporarily);
+
+            document.addEventListener('dblclick', () => {
+                this.enterFullScreen();
+            });
+        }
+    }
+
+    window.addEventListener('load', () => {
         new MediaPlayer();
     });
 
@@ -481,7 +512,7 @@
             document.documentElement.requestFullscreen().catch(err => {});
         }
     });
-    </script>
+</script>
 </body>
 </html>
 
