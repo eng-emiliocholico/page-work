@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reproductor Multimedia Local</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #000;
+            color: white;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            touch-action: manipulation;
+        }
+
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        #mediaDisplay {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: black;
+        }
+
+        #mediaDisplay img {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            image-rendering: high-quality;
+        }
+
+        #mediaDisplay video {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 25px;
+            border-radius: 25px;
+            display: flex;
+            gap: 15px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        #controls:hover, #controls:active {
+            opacity: 1;
+        }
+
+        .control-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            min-width: 100px;
+        }
+
+        .control-btn:hover {
+            background: #0056b3;
+        }
+
+        #info {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        #fileCounter {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+            text-align: center;
+        }
+
+        /* Indicador de tipo de archivo */
+        .file-type {
+            position: absolute;
+            top: 60px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">Inicializando reproductor...</div>
+    
+    <div id="container" class="hidden">
+        <div id="info">Reproductor Local</div>
+        <div id="fileCounter"></div>
+        <div class="file-type" id="fileType"></div>
+
+        <div id="mediaDisplay">
+            <!-- Aquí se mostrarán las imágenes y videos -->
+        </div>
+
+        <div id="controls">
+            <button class="control-btn" id="prevBtn">◀ Anterior</button>
+            <button class="control-btn" id="playPauseBtn">⏸ Pausar</button>
+            <button class="control-btn" id="nextBtn">Siguiente ▶</button>
+        </div>
+    </div>
+
+    <script>
+        class LocalMediaPlayer {
+            constructor() {
+                this.mediaFiles = [];
+                this.currentIndex = 0;
+                this.isPlaying = true;
+                this.currentMedia = null;
+                this.slideInterval = null;
+                this.slideDuration = 5000; // 5 segundos por imagen
+
+                this.initializeElements();
+                this.loadMediaFiles();
+                this.setupEventListeners();
+            }
+
+            initializeElements() {
+                this.container = document.getElementById('container');
+                this.mediaDisplay = document.getElementById('mediaDisplay');
+                this.controls = document.getElementById('controls');
+                this.prevBtn = document.getElementById('prevBtn');
+                this.playPauseBtn = document.getElementById('playPauseBtn');
+                this.nextBtn = document.getElementById('nextBtn');
+                this.loading = document.getElementById('loading');
+                this.fileCounter = document.getElementById('fileCounter');
+                this.fileType = document.getElementById('fileType');
+            }
+
+            loadMediaFiles() {
+                try {
+                    // ARCHIVOS MANUALES - ¡MODIFICA ESTA LISTA!
+                    this.mediaFiles = [
+                        // IMÁGENES - Agrega tus archivos de imagen aquí
+                        { name: 'imagen1.png', type: 'image', path: 'imagenes/imagen1.png' },
+                        { name: 'imagen2.png', type: 'image', path: 'imagenes/imagen2.png' },
+                        { name: 'foto1.webp', type: 'image', path: 'imagenes/foto1.webp' },
+                        
+                        // VIDEOS - Agrega tus archivos de video aquí
+                        { name: 'video1.mp4', type: 'video', path: 'videos/video1.mp4' },
+                        
+                        // AGREGA MÁS ARCHIVOS SEGÚN NECESITES...
+                        // Formato: { name: 'nombre.extension', type: 'image/video', path: 'ruta/archivo' }
+                    ];
+
+                    // Filtrar archivos que existen
+                    this.checkExistingFiles().then(existingFiles => {
+                        this.mediaFiles = existingFiles;
+                        
+                        if (this.mediaFiles.length > 0) {
+                            this.showInterface();
+                            this.updateFileCounter();
+                            this.loadCurrentMedia();
+                            this.startSlideshow();
+                        } else {
+                            this.showError('No se encontraron archivos multimedia. Modifica la lista en el código.');
+                        }
+                    });
+
+                } catch (error) {
+                    this.showError('Error al cargar archivos: ' + error.message);
+                }
+            }
+
+            async checkExistingFiles() {
+                const existingFiles = [];
+                
+                for (const file of this.mediaFiles) {
+                    try {
+                        const response = await fetch(file.path, { method: 'HEAD' });
+                        if (response.ok) {
+                            existingFiles.push(file);
+                        }
+                    } catch (e) {
+                        console.log('Archivo no encontrado:', file.path);
+                    }
+                }
+                
+                return existingFiles;
+            }
+
+            showInterface() {
+                this.loading.classList.add('hidden');
+                this.container.classList.remove('hidden');
+            }
+
+            loadCurrentMedia() {
+                if (this.mediaFiles.length === 0) return;
+
+                const file = this.mediaFiles[this.currentIndex];
+                this.mediaDisplay.innerHTML = '';
+                this.controls.style.display = 'flex';
+
+                if (file.type === 'image') {
+                    this.loadImage(file);
+                } else if (file.type === 'video') {
+                    this.loadVideo(file);
+                }
+
+                this.updateFileCounter();
+                this.updateFileType(file.type);
+            }
+
+            loadImage(file) {
+                const img = new Image();
+                img.onload = () => {
+                    this.currentMedia = img;
+                    this.mediaDisplay.appendChild(img);
+                    console.log('Imagen cargada:', file.name);
+                };
+                img.onerror = () => {
+                    console.error('Error cargando imagen:', file.name);
+                    this.nextMedia();
+                };
+                img.src = file.path;
+            }
+
+            loadVideo(file) {
+                const video = document.createElement('video');
+                video.src = file.path;
+                video.controls = false;
+                video.autoplay = true;
+                video.muted = false; // Sonido activado
+                
+                video.onloadeddata = () => {
+                    this.currentMedia = video;
+                    this.mediaDisplay.appendChild(video);
+                    console.log('Video cargado:', file.name);
+                };
+
+                video.onended = () => {
+                    this.nextMedia();
+                };
+
+                video.onerror = () => {
+                    console.error('Error cargando video:', file.name);
+                    this.nextMedia();
+                };
+            }
+
+            startSlideshow() {
+                this.stopSlideshow();
+                if (this.mediaFiles[this.currentIndex]?.type === 'image') {
+                    this.slideInterval = setInterval(() => {
+                        this.nextMedia();
+                    }, this.slideDuration);
+                    this.isPlaying = true;
+                    this.updatePlayPauseButton();
+                }
+            }
+
+            stopSlideshow() {
+                if (this.slideInterval) {
+                    clearInterval(this.slideInterval);
+                    this.slideInterval = null;
+                }
+                this.isPlaying = false;
+                this.updatePlayPauseButton();
+            }
+
+            togglePlayPause() {
+                const currentFile = this.mediaFiles[this.currentIndex];
+                
+                if (currentFile.type === 'image') {
+                    if (this.isPlaying) {
+                        this.stopSlideshow();
+                    } else {
+                        this.startSlideshow();
+                    }
+                } else if (currentFile.type === 'video') {
+                    const video = this.currentMedia;
+                    if (video.paused) {
+                        video.play();
+                        this.isPlaying = true;
+                    } else {
+                        video.pause();
+                        this.isPlaying = false;
+                    }
+                    this.updatePlayPauseButton();
+                }
+            }
+
+            nextMedia() {
+                this.currentIndex = (this.currentIndex + 1) % this.mediaFiles.length;
+                this.loadCurrentMedia();
+                
+                // Si es imagen, reiniciar slideshow
+                if (this.mediaFiles[this.currentIndex]?.type === 'image') {
+                    this.startSlideshow();
+                }
+            }
+
+            prevMedia() {
+                this.currentIndex = this.currentIndex > 0 ? 
+                    this.currentIndex - 1 : 
+                    this.mediaFiles.length - 1;
+                this.loadCurrentMedia();
+                
+                // Si es imagen, reiniciar slideshow
+                if (this.mediaFiles[this.currentIndex]?.type === 'image') {
+                    this.startSlideshow();
+                }
+            }
+
+            updatePlayPauseButton() {
+                const currentFile = this.mediaFiles[this.currentIndex];
+                if (!currentFile) return;
+
+                if (currentFile.type === 'image') {
+                    this.playPauseBtn.textContent = this.isPlaying ? '⏸ Pausar' : '▶ Reproducir';
+                } else {
+                    const video = this.currentMedia;
+                    this.playPauseBtn.textContent = video && !video.paused ? '⏸ Pausar' : '▶ Reproducir';
+                }
+            }
+
+            updateFileCounter() {
+                this.fileCounter.textContent = `${this.currentIndex + 1} / ${this.mediaFiles.length}`;
+            }
+
+            updateFileType(type) {
+                this.fileType.textContent = type === 'image' ? '🖼️ Imagen' : '🎬 Video';
+            }
+
+            showError(message) {
+                this.loading.innerHTML = `
+                    <div style="color: #ff4444;">
+                        <h3>Error</h3>
+                        <p>${message}</p>
+                        <p>Verifica que los archivos existan en las rutas especificadas.</p>
+                    </div>
+                `;
+            }
+
+            setupEventListeners() {
+                // Controles de botones
+                this.prevBtn.addEventListener('click', () => this.prevMedia());
+                this.nextBtn.addEventListener('click', () => this.nextMedia());
+                this.playPauseBtn.addEventListener('click', () => this.togglePlayPause());
+
+                // Controles de teclado
+                document.addEventListener('keydown', (e) => {
+                    switch(e.key) {
+                        case 'ArrowLeft':
+                            this.prevMedia();
+                            break;
+                        case 'ArrowRight':
+                            this.nextMedia();
+                            break;
+                        case ' ':
+                        case 'Spacebar':
+                            e.preventDefault();
+                            this.togglePlayPause();
+                            break;
+                    }
+                });
+
+                // Controles táctiles (para TV)
+                let touchStartX = 0;
+                this.mediaDisplay.addEventListener('touchstart', (e) => {
+                    touchStartX = e.changedTouches[0].screenX;
+                });
+
+                this.mediaDisplay.addEventListener('touchend', (e) => {
+                    const touchEndX = e.changedTouches[0].screenX;
+                    const diff = touchStartX - touchEndX;
+
+                    if (Math.abs(diff) > 50) { // Umbral de deslizamiento
+                        if (diff > 0) {
+                            this.nextMedia(); // Deslizar izquierda
+                        } else {
+                            this.prevMedia(); // Deslizar derecha
+                        }
+                    }
+                });
+            }
+        }
+
+        // Inicializar el reproductor cuando se carga la página
+        document.addEventListener('DOMContentLoaded', () => {
+            new LocalMediaPlayer();
+        });
+
+        // Forzar pantalla completa al hacer doble clic
+        document.addEventListener('dblclick', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log('Error al intentar pantalla completa:', err);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+    </script>
+</body>
+</html>
