@@ -40,22 +40,19 @@
             overflow: hidden;
         }
 
-        /* IMÁGENES - Resolución máxima */
+        /* IMÁGENES - Expandir al máximo */
         #mediaDisplay img {
-            max-width: none;
-            max-height: none;
             width: 100vw;
-            height: auto;
+            height: 100vh;
+            object-fit: cover;
             display: block;
-            image-rendering: high-quality;
         }
 
-        /* VIDEOS - Mantener relación de aspecto */
+        /* VIDEOS - Expandir al máximo */
         #mediaDisplay video {
-            max-width: none;
-            max-height: none;
-            width: auto;
-            height: auto;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
             display: block;
         }
 
@@ -188,7 +185,6 @@
                 this.currentMedia = null;
                 this.slideInterval = null;
                 this.slideDuration = 5000;
-                this.isFullScreen = false;
                 this.videoEndedHandler = null;
 
                 this.initializeElements();
@@ -218,7 +214,6 @@
                     } else if (document.documentElement.webkitRequestFullscreen) {
                         await document.documentElement.webkitRequestFullscreen();
                     }
-                    this.isFullScreen = true;
                 } catch (error) {
                     console.log('Pantalla completa no disponible');
                 }
@@ -229,12 +224,12 @@
                     // 🎯 AGREGA TUS ARCHIVOS AQUÍ
                     this.mediaFiles = [
                         // Imágenes
-                        { name: 'imagen1.png', type: 'image', path: 'imagenes/imagen1.png' },
+                        { name: 'imagen1.jpg', type: 'image', path: 'imagenes/imagen1.jpg' },
                         { name: 'imagen2.png', type: 'image', path: 'imagenes/imagen2.png' },
                         { name: 'foto1.webp', type: 'image', path: 'imagenes/foto1.webp' },
                         
                         // Videos  
-                        { name: 'video1.mp4', type: 'video', path: 'videos/video1.mp4' },
+                        { name: 'video1.mp4', type: 'video', path: 'videos/video1.mp4' }
                         
                         // Agrega más archivos aquí...
                     ];
@@ -248,7 +243,7 @@
                             this.loadCurrentMedia();
                             this.startSlideshow();
                         } else {
-                            this.showError('No se encontraron archivos.');
+                            this.showError('No se encontraron archivos. Verifica las rutas.');
                         }
                     });
 
@@ -262,8 +257,8 @@
                 
                 for (const file of this.mediaFiles) {
                     try {
-                        const response = await fetch(file.path, { method: 'HEAD' });
-                        if (response.ok) {
+                        const response = await fetch(file.path);
+                        if (response.status === 200) {
                             existingFiles.push(file);
                         }
                     } catch (e) {
@@ -304,7 +299,6 @@
                 img.onload = () => {
                     this.currentMedia = img;
                     this.mediaDisplay.appendChild(img);
-                    this.adjustImageSize(img);
                     
                     if (this.isPlaying) {
                         this.startSlideshow();
@@ -316,22 +310,6 @@
                 img.src = file.path;
             }
 
-            adjustImageSize(img) {
-                const screenWidth = window.innerWidth;
-                const screenHeight = window.innerHeight;
-                const imgWidth = img.naturalWidth;
-                const imgHeight = img.naturalHeight;
-
-                if (imgWidth <= screenWidth && imgHeight <= screenHeight) {
-                    img.style.width = imgWidth + 'px';
-                    img.style.height = imgHeight + 'px';
-                } else {
-                    const ratio = Math.min(screenWidth / imgWidth, screenHeight / imgHeight);
-                    img.style.width = (imgWidth * ratio) + 'px';
-                    img.style.height = (imgHeight * ratio) + 'px';
-                }
-            }
-
             loadVideo(file) {
                 this.stopSlideshow();
                 
@@ -339,13 +317,13 @@
                 video.src = file.path;
                 video.controls = false;
                 video.autoplay = true;
-                video.muted = false;
+                video.muted = true;
                 video.playsInline = true;
                 
                 video.setAttribute('playsinline', '');
                 video.setAttribute('webkit-playsinline', '');
                 
-                video.onloadedmetadata = () => {
+                video.onloadeddata = () => {
                     this.currentMedia = video;
                     this.mediaDisplay.appendChild(video);
 
@@ -358,11 +336,7 @@
                         this.isPlaying = true;
                         this.updatePlayPauseButton();
                     }).catch(error => {
-                        video.muted = true;
-                        video.play().then(() => {
-                            this.isPlaying = true;
-                            this.updatePlayPauseButton();
-                        });
+                        this.nextMedia();
                     });
                 };
 
@@ -425,16 +399,16 @@
             }
 
             nextMedia() {
-                this.currentIndex = (this.currentIndex + 1) % this.mediaFiles.length;
-                this.loadCurrentMedia();
-            }
+            this.currentIndex = (this.currentIndex + 1) % this.mediaFiles.length;
+            this.loadCurrentMedia();
+        }
 
-            prevMedia() {
-                this.currentIndex = this.currentIndex > 0 ? 
-                    this.currentIndex - 1 : 
-                    this.mediaFiles.length - 1;
-                this.loadCurrentMedia();
-            }
+        prevMedia() {
+            this.currentIndex = this.currentIndex > 0 ? 
+                this.currentIndex - 1 : 
+                this.mediaFiles.length - 1;
+            this.loadCurrentMedia();
+        }
 
             updatePlayPauseButton() {
                 this.playPauseBtn.textContent = this.isPlaying ? '⏸' : '▶';
@@ -494,26 +468,18 @@
                 document.addEventListener('dblclick', () => {
                     this.enterFullScreen();
                 });
-
-                window.addEventListener('resize', () => {
-                    if (this.currentMedia && this.mediaFiles[this.currentIndex]?.type === 'image') {
-                        this.adjustImageSize(this.currentMedia);
-                    }
-                });
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            new MediaPlayer();
-        });
+        window.addEventListener('load', () => {
+        new MediaPlayer();
+    });
 
-        document.addEventListener('fullscreenchange', () => {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {});
-            }
-        });
+    document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {});
+        }
+    });
     </script>
 </body>
 </html>
-
-
