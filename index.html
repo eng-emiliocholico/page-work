@@ -21,6 +21,21 @@
             touch-action: manipulation;
         }
 
+        #blurBackground {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(15px) brightness(0.7);
+    transform: scale(1.1); /* Para evitar bordes */
+    z-index: -1;
+    transition: background-image 0.5s ease;
+}
+
         #container {
             width: 100vw;
             height: 100vh;
@@ -32,20 +47,23 @@
 
         #mediaDisplay {
             width: 100vw;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: black;
-            overflow: hidden;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: transparent; /* Cambiar a transparente */
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
         }
 
         /* IMÁGENES - Expandir al máximo */
         #mediaDisplay img {
-            width: auto;
-            height: 100vh;
-            object-fit: cover;
-            display: block;
+             max-width: 90%;
+    width: auto;
+    height: 100vh;
+    object-fit: contain;
+    display: block;
         }
 
         /* VIDEOS - Expandir al máximo */
@@ -158,6 +176,7 @@
     <div id="container" class="hidden">
         <div id="fileCounter"></div>
 
+        <div id="blurBackground"></div>
         <div id="mediaDisplay">
             <!-- Aquí se mostrarán las imágenes y videos -->
         </div>
@@ -187,6 +206,12 @@
                 this.slideDuration = 5000;
                 this.videoEndedHandler = null;
 
+                this.backgroundMusic = new Audio('onsupplymusic.mp3'); // Ruta de tu música
+                this.backgroundMusic.loop = true;
+                this.backgroundMusic.volume = 1;
+
+                this.blurBackground = null;
+
                 // ✅ PRIMERO inicializar elementos, LUEGO configurar eventos
                 this.initializeElements();
                 this.setupEventListeners();
@@ -206,7 +231,7 @@
                 this.touchLeft = document.getElementById('touchLeft');
                 this.touchCenter = document.getElementById('touchCenter');
                 this.touchRight = document.getElementById('touchRight');
-
+                this.blurBackground = document.getElementById('blurBackground');
                 // ✅ VERIFICACIÓN DE ELEMENTOS
                 if (!this.container || !this.mediaDisplay || !this.controls) {
                     console.error('Error: No se encontraron algunos elementos del DOM');
@@ -264,8 +289,9 @@
                         { name: 'a30.jpg', type: 'image', path: 'imagenes/a30.jpg' },
                         
                         // Videos  
+                        { name: 'video2.mp4', type: 'video', path: 'videos/video2.mp4' },
                         { name: 'onsupply.mp4', type: 'video', path: 'videos/onsupply.mp4' },
-                        { name: 'video1.mp4', type: 'video', path: 'videos/video1.mp4' }
+                        { name: 'video1.mp4', type: 'video', path: 'videos/video1.mp4' },
                     ];
 
                     this.checkExistingFiles().then(existingFiles => {
@@ -316,6 +342,12 @@
                 const file = this.mediaFiles[this.currentIndex];
                 console.log('Cargando archivo:', file.name, 'Índice:', this.currentIndex);
                 
+                if (file.type === 'video') {
+                    this.backgroundMusic.pause();
+                } else if (file.type === 'image') {
+                    this.backgroundMusic.play().catch(e => console.log('Audio requiere interacción del usuario'));
+                }
+
                 if (this.mediaDisplay) {
                     this.mediaDisplay.innerHTML = '';
                 }
@@ -344,6 +376,9 @@
                     if (this.mediaDisplay) {
                         this.mediaDisplay.appendChild(img);
                     }
+                    if (this.blurBackground) {
+            this.blurBackground.style.backgroundImage = `url('${file.path}')`;
+        }
                     console.log('✅ Imagen cargada:', file.name);
                     
                     if (this.isPlaying) {
@@ -371,6 +406,17 @@
                 video.setAttribute('playsinline', '');
                 video.setAttribute('webkit-playsinline', '');
                 
+                const updateBlurBackground = () => {
+        if (this.blurBackground) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            this.blurBackground.style.backgroundImage = `url(${canvas.toDataURL()})`;
+        }
+    };
+
                 video.onloadeddata = () => {
                     this.currentMedia = video;
                     if (this.mediaDisplay) {
@@ -381,6 +427,7 @@
                         console.log('⏭️ Video terminado, siguiente archivo');
                         // ✅ CORRECCIÓN 1: Aseguramos que el estado de reproducción se mantenga en true para el siguiente archivo
                         this.isPlaying = true; 
+                        this.backgroundMusic.play().catch(e => console.log('Error reanudando música'));
                         this.nextMedia();
                     };
                     video.addEventListener('ended', this.videoEndedHandler);
@@ -578,4 +625,3 @@
     </script>
 </body>
 </html>
-
