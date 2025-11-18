@@ -359,9 +359,7 @@
                     this.backgroundMusic.play().catch(e => console.log('Audio requiere interacción del usuario'));
                 }
 
-                // Si hay elementos anteriores que no se eliminaron en transitionOut, eliminarlos aquí
-                if (this.mediaDisplay.children.length > 0) {
-                    // Eliminar solo los elementos que no están en transición (principalmente videos o imágenes al cargar por primera vez)
+                if (this.mediaDisplay) {
                     this.mediaDisplay.innerHTML = '';
                 }
                 
