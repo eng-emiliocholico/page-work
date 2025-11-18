@@ -269,4 +269,421 @@
                     this.mediaFiles = [
                         // Imágenes
                         { name: 'a1.jpg', type: 'image', path: 'imagenes/a1.jpg' },
-                        { name: 'a2.jpg', type: 'image', path: 'imagenes/a2.jpg'
+                        { name: 'a2.jpg', type: 'image', path: 'imagenes/a2.jpg' },
+                        { name: 'a3.jpg', type: 'image', path: 'imagenes/a3.jpg' },
+                        { name: 'a4.jpg', type: 'image', path: 'imagenes/a4.jpg' },
+                        { name: 'a5.jpg', type: 'image', path: 'imagenes/a5.jpg' },
+                        { name: 'a6.jpg', type: 'image', path: 'imagenes/a6.jpg' },
+                        { name: 'a7.jpg', type: 'image', path: 'imagenes/a7.jpg' },
+                        { name: 'a8.jpg', type: 'image', path: 'imagenes/a8.jpg' },
+                        { name: 'a9.jpg', type: 'image', path: 'imagenes/a9.jpg' },
+                        { name: 'a10.jpg', type: 'image', path: 'imagenes/a10.jpg' },
+                        { name: 'a11.jpg', type: 'image', path: 'imagenes/a11.jpg' },
+                        { name: 'a12.jpg', type: 'image', path: 'imagenes/a12.jpg' },
+                        { name: 'a13.jpg', type: 'image', path: 'imagenes/a13.jpg' },
+                        { name: 'a14.jpg', type: 'image', path: 'imagenes/a14.jpg' },
+                        { name: 'a15.jpg', type: 'image', path: 'imagenes/a15.jpg' },
+                        { name: 'a16.jpg', type: 'image', path: 'imagenes/a16.jpg' },
+                        { name: 'a17.jpg', type: 'image', path: 'imagenes/a17.jpg' },
+                        { name: 'a18.jpg', type: 'image', path: 'imagenes/a18.jpg' },
+                        { name: 'a19.jpg', type: 'image', path: 'imagenes/a19.jpg' },
+                        { name: 'a20.jpg', type: 'image', path: 'imagenes/a20.jpg' },
+                        { name: 'a21.jpg', type: 'image', path: 'imagenes/a21.jpg' },
+                        { name: 'a22.jpg', type: 'image', path: 'imagenes/a22.jpg' },
+                        { name: 'a23.jpg', type: 'image', path: 'imagenes/a23.jpg' },
+                        { name: 'a24.jpg', type: 'image', path: 'imagenes/a24.jpg' },
+                        { name: 'a25.jpg', type: 'image', path: 'imagenes/a25.jpg' },
+                        { name: 'a26.jpg', type: 'image', path: 'imagenes/a26.jpg' },
+                        { name: 'a27.jpg', type: 'image', path: 'imagenes/a27.jpg' },
+                        { name: 'a28.jpg', type: 'image', path: 'imagenes/a28.jpg' },
+                        { name: 'a29.jpg', type: 'image', path: 'imagenes/a29.jpg' },
+                        { name: 'a30.jpg', type: 'image', path: 'imagenes/a30.jpg' },
+                        
+                        // Videos  
+                        { name: 'video2.mp4', type: 'video', path: 'videos/video2.mp4' },
+                        { name: 'onsupply.mp4', type: 'video', path: 'videos/onsupply.mp4' },
+                        { name: 'video1.mp4', type: 'video', path: 'videos/video1.mp4' },
+                    ];
+
+                    this.checkExistingFiles().then(existingFiles => {
+                        this.mediaFiles = existingFiles;
+                        
+                        if (this.mediaFiles.length > 0) {
+                            this.showInterface();
+                            this.updateFileCounter();
+                            this.loadCurrentMedia();
+                        } else {
+                            this.showError('No se encontraron archivos. Verifica las rutas.');
+                        }
+                    });
+
+                } catch (error) {
+                    this.showError('Error al cargar archivos: ' + error.message);
+                }
+            }
+
+            async checkExistingFiles() {
+                const existingFiles = [];
+                
+                for (const file of this.mediaFiles) {
+                    try {
+                        const response = await fetch(file.path, { method: 'HEAD' });
+                        if (response.status === 200) {
+                            existingFiles.push(file);
+                            console.log('✅ Archivo encontrado:', file.path);
+                        }
+                    } catch (e) {
+                        console.log('❌ Archivo no encontrado:', file.path);
+                    }
+                }
+                
+                return existingFiles;
+            }
+
+            showInterface() {
+                if (this.loading && this.container) {
+                    this.loading.classList.add('hidden');
+                    this.container.classList.remove('hidden');
+                }
+            }
+
+            loadCurrentMedia() {
+                if (this.mediaFiles.length === 0) return;
+
+                const file = this.mediaFiles[this.currentIndex];
+                console.log('Cargando archivo:', file.name, 'Índice:', this.currentIndex);
+                
+                if (file.type === 'video') {
+                    this.backgroundMusic.pause();
+                } else if (file.type === 'image') {
+                    this.backgroundMusic.play().catch(e => console.log('Audio requiere interacción del usuario'));
+                }
+
+                // Si hay elementos anteriores que no se eliminaron en transitionOut, eliminarlos aquí
+                if (this.mediaDisplay.children.length > 0) {
+                    // Eliminar solo los elementos que no están en transición (principalmente videos o imágenes al cargar por primera vez)
+                    this.mediaDisplay.innerHTML = '';
+                }
+                
+                if (this.controls) {
+                    this.controls.style.display = 'flex';
+                }
+
+                if (this.videoEndedHandler && this.currentMedia) {
+                    this.currentMedia.removeEventListener('ended', this.videoEndedHandler);
+                }
+
+                if (file.type === 'image') {
+                    this.loadImage(file);
+                } else if (file.type === 'video') {
+                    this.loadVideo(file);
+                }
+
+                this.updateFileCounter();
+            }
+
+            loadImage(file) {
+                const img = new Image();
+                // Importante: No aplicamos la opacidad 0 hasta que esté cargada y lista para el Fade-In
+                img.style.opacity = '0';
+                
+                img.onload = () => {
+                    this.currentMedia = img;
+                    if (this.mediaDisplay) {
+                        this.mediaDisplay.appendChild(img);
+                    }
+                    if (this.blurBackground) {
+                        this.blurBackground.style.backgroundImage = `url('${file.path}')`;
+                    }
+                    
+                    // Aseguramos que la opacidad 0 inicial se haya aplicado antes de iniciar la transición
+                    // Luego activamos la transición a opacidad 1
+                    setTimeout(() => {
+                        img.classList.add('media-visible');
+                    }, 50);
+
+                    console.log('✅ Imagen cargada:', file.name);
+                    
+                    if (this.isPlaying) {
+                        console.log('🔄 Iniciando slideshow para imagen:', file.name);
+                        this.startSlideshow();
+                    }
+                };
+                img.onerror = () => {
+                    console.error('❌ Error cargando imagen:', file.name);
+                    this.nextMedia();
+                };
+                img.src = file.path;
+            }
+
+            loadVideo(file) {
+                this.stopSlideshow();
+                
+                const video = document.createElement('video');
+                video.src = file.path;
+                video.controls = false;
+                video.autoplay = true;
+                video.muted = false; 
+                video.playsInline = true;
+                
+                video.setAttribute('playsinline', '');
+                video.setAttribute('webkit-playsinline', '');
+
+                video.onloadeddata = () => {
+                    this.currentMedia = video;
+                    if (this.mediaDisplay) {
+                        this.mediaDisplay.appendChild(video);
+                    }
+                    // Videos se ven inmediatamente, no usan fade-in
+                    
+                    this.videoEndedHandler = () => {
+                        console.log('⏭️ Video terminado, siguiente archivo');
+                        this.isPlaying = true; 
+                        this.backgroundMusic.play().catch(e => console.log('Error reanudando música'));
+                        this.nextMedia();
+                    };
+                    video.addEventListener('ended', this.videoEndedHandler);
+
+                    video.play().then(() => {
+                        this.updatePlayPauseButton();
+                        console.log('🎬 Video reproduciéndose:', file.name);
+                    }).catch(error => {
+                        console.error('❌ Error reproduciendo video, se omitirá:', error);
+                        this.isPlaying = true;
+                        this.nextMedia();
+                    });
+                };
+
+                video.onplay = () => {
+                    this.isPlaying = true;
+                    this.updatePlayPauseButton();
+                };
+
+                video.onpause = () => {
+                    this.isPlaying = false;
+                    this.updatePlayPauseButton();
+                };
+
+                video.onerror = () => {
+                    console.error('❌ Error cargando video:', file.name);
+                    this.nextMedia();
+                };
+            }
+
+            startSlideshow() {
+                this.stopSlideshow();
+                
+                const currentFile = this.mediaFiles[this.currentIndex];
+                if (currentFile && currentFile.type === 'image') {
+                    console.log('🔄 Iniciando intervalo de slideshow para:', currentFile.name);
+                    
+                    this.slideInterval = setInterval(() => {
+                        console.log('⏰ Intervalo ejecutado, avanzando...');
+                        this.nextMedia();
+                    }, this.slideDuration);
+                    
+                    this.isPlaying = true;
+                    this.updatePlayPauseButton();
+                }
+            }
+
+            stopSlideshow() {
+                if (this.slideInterval) {
+                    console.log('🛑 Deteniendo slideshow');
+                    clearInterval(this.slideInterval);
+                    this.slideInterval = null;
+                }
+            }
+
+            togglePlayPause() {
+                const currentFile = this.mediaFiles[this.currentIndex];
+                
+                if (currentFile.type === 'image') {
+                    if (this.isPlaying) {
+                        this.stopSlideshow();
+                        this.isPlaying = false;
+                        console.log('⏸ Pausando slideshow');
+                    } else {
+                        this.startSlideshow();
+                        this.isPlaying = true;
+                        console.log('▶ Reanudando slideshow');
+                    }
+                } else if (currentFile.type === 'video') {
+                    const video = this.currentMedia;
+                    if (video && video.paused) {
+                        video.play().then(() => {
+                            this.isPlaying = true;
+                        });
+                    } else if (video) {
+                        video.pause();
+                        this.isPlaying = false;
+                    }
+                }
+                this.updatePlayPauseButton();
+            }
+            
+            // Función para manejar el desvanecimiento de salida (Fade-Out)
+            transitionOut(callback) {
+                this.stopSlideshow(); 
+                this.isPlaying = true;
+                this.updatePlayPauseButton();
+
+                const currentMediaElement = this.currentMedia;
+                
+                if (currentMediaElement && currentMediaElement.tagName === 'IMG') {
+                    console.log('🔄 Iniciando Fade-Out de la imagen actual...');
+                    
+                    // Aplicar clase de fade-out
+                    currentMediaElement.classList.remove('media-visible');
+                    currentMediaElement.classList.add('media-fade-out');
+
+                    // Esperar la duración de la transición (0.7s) + un pequeño buffer
+                    const transitionDurationMs = 750; 
+                    
+                    setTimeout(() => {
+                        console.log('✅ Fade-Out completado, cargando nuevo archivo.');
+                        // Eliminar el elemento después de que se desvanece
+                        if (currentMediaElement.parentNode === this.mediaDisplay) {
+                             this.mediaDisplay.removeChild(currentMediaElement);
+                        }
+                        callback();
+                    }, transitionDurationMs);
+                } else {
+                    // Si no es imagen (ej. es video), no hay transición de salida, avanzar inmediatamente
+                    callback();
+                }
+            }
+
+            nextMedia() {
+                console.log('➡️ Preparando avance al siguiente archivo');
+                
+                const currentFile = this.mediaFiles[this.currentIndex];
+                
+                if (currentFile && currentFile.type === 'image') {
+                    // Usar transitionOut para imágenes
+                    this.transitionOut(() => {
+                        this.currentIndex = (this.currentIndex + 1) % this.mediaFiles.length;
+                        this.loadCurrentMedia();
+                    });
+                } else {
+                    // Simplemente avanzar para videos
+                    this.currentIndex = (this.currentIndex + 1) % this.mediaFiles.length;
+                    this.loadCurrentMedia();
+                }
+            }
+
+            prevMedia() {
+                console.log('⬅️ Preparando retroceso al archivo anterior');
+
+                const currentFile = this.mediaFiles[this.currentIndex];
+
+                if (currentFile && currentFile.type === 'image') {
+                    // Usar transitionOut para imágenes
+                    this.transitionOut(() => {
+                        this.currentIndex = this.currentIndex > 0 ? 
+                            this.currentIndex - 1 : 
+                            this.mediaFiles.length - 1;
+                        this.loadCurrentMedia();
+                    });
+                } else {
+                    // Simplemente retroceder para videos
+                    this.currentIndex = this.currentIndex > 0 ? 
+                        this.currentIndex - 1 : 
+                        this.mediaFiles.length - 1;
+                    this.loadCurrentMedia();
+                }
+            }
+
+            updatePlayPauseButton() {
+                if (this.playPauseBtn) {
+                    this.playPauseBtn.textContent = this.isPlaying ? '⏸' : '▶';
+                }
+            }
+
+            updateFileCounter() {
+                if (this.fileCounter) {
+                    this.fileCounter.textContent = `${this.currentIndex + 1} / ${this.mediaFiles.length}`;
+                }
+            }
+
+            showError(message) {
+                if (this.loading) {
+                    this.loading.innerHTML = `
+                        <div style="color: #ff4444; text-align: center;">
+                            <h3>Error</h3>
+                            <p>${message}</p>
+                        </div>
+                    `;
+                }
+            }
+
+            setupEventListeners() {
+                // ✅ VERIFICAR QUE LOS ELEMENTOS EXISTAN ANTES DE AGREGAR EVENTOS
+                if (this.prevBtn) {
+                    this.prevBtn.addEventListener('click', () => this.prevMedia());
+                }
+                if (this.nextBtn) {
+                    this.nextBtn.addEventListener('click', () => this.nextMedia());
+                }
+                if (this.playPauseBtn) {
+                    this.playPauseBtn.addEventListener('click', () => this.togglePlayPause());
+                }
+                if (this.touchLeft) {
+                    this.touchLeft.addEventListener('click', () => this.prevMedia());
+                }
+                if (this.touchRight) {
+                    this.touchRight.addEventListener('click', () => this.nextMedia());
+                }
+                if (this.touchCenter) {
+                    this.touchCenter.addEventListener('click', () => this.togglePlayPause());
+                }
+
+                // Eventos de teclado
+                document.addEventListener('keydown', (e) => {
+                    switch(e.key) {
+                        case 'ArrowLeft':
+                            this.prevMedia();
+                            break;
+                        case 'ArrowRight':
+                            this.nextMedia();
+                            break;
+                        case ' ':
+                            e.preventDefault();
+                            this.togglePlayPause();
+                            break;
+                        case 'Escape':
+                            e.preventDefault();
+                            break;
+                    }
+                });
+
+                // Mostrar controles temporalmente
+                let controlsTimeout;
+                const showControlsTemporarily = () => {
+                    if (this.controls) {
+                        this.controls.style.opacity = '1';
+                        clearTimeout(controlsTimeout);
+                        controlsTimeout = setTimeout(() => {
+                            this.controls.style.opacity = '0';
+                        }, 3000);
+                    }
+                };
+
+                if (this.touchOverlay) {
+                    this.touchOverlay.addEventListener('click', showControlsTemporarily);
+                }
+
+                // Pantalla completa al hacer doble clic
+                document.addEventListener('dblclick', () => {
+                    this.enterFullScreen();
+                });
+            }
+        }
+
+        // ✅ INICIALIZAR CUANDO EL DOM ESTÉ LISTO
+        document.addEventListener('DOMContentLoaded', () => {
+            new MediaPlayer();
+        });
+    </script>
+</body>
+</html>
