@@ -1,726 +1,310 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reproductor</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reproductor</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:#000;color:#fff;font-family:Arial,sans-serif;overflow:hidden;height:100vh;width:100vw;touch-action:manipulation}
 
-        html, body {
-            background-color: #000;
-            color: white;
-            font-family: Arial, sans-serif;
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-            touch-action: manipulation;
-        }
+#blur{
+  position:fixed;inset:0;
+  background-size:cover;background-position:center;
+  filter:blur(20px) brightness(.5);
+  transform:scale(1.15);
+  z-index:0;
+  transition:background-image .5s ease;
+}
+#blur-video{
+  position:fixed;inset:0;
+  z-index:0;display:none;overflow:hidden;
+}
+#blur-video video{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%) scale(1.15);
+  min-width:100vw;min-height:100vh;
+  width:auto;height:auto;
+  object-fit:cover;
+  filter:blur(20px) brightness(.5);
+  pointer-events:none;
+}
 
-        #blurBackground {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            filter: blur(15px) brightness(0.7);
-            transform: scale(1.1); /* Para evitar bordes */
-            z-index: -1;
-            transition: background-image 0.5s ease;
-        }
+#display{
+  position:fixed;inset:0;
+  display:flex;justify-content:center;align-items:center;
+  z-index:1;
+}
+#display img{
+  max-width:90%;height:100vh;
+  object-fit:contain;
+  opacity:0;transition:opacity .7s ease-in-out;
+}
+#display img.visible{opacity:1}
+#display video{width:auto;height:100vh;object-fit:contain}
 
-        #container {
-            width: 100vw;
-            height: 100vh;
-            position: fixed;
-            top: 0;
-            left: 0;
-            background: black;
-        }
-
-        #mediaDisplay {
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: transparent; /* Cambiar a transparente */
-            overflow: hidden;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* IMÁGENES - Expandir al máximo */
-        #mediaDisplay img {
-            max-width: 90%;
-            width: auto;
-            height: 100vh;
-            object-fit: contain;
-            display: block;
-            /* PROPIEDADES AÑADIDAS PARA LA TRANSICIÓN */
-            opacity: 0; 
-            transition: opacity 0.7s ease-in-out; /* Fundido de 0.7 segundos */
-        }
-
-        /* CLASE: Para hacer visible la imagen con transición (Fade-In) */
-        .media-visible {
-            opacity: 1 !important;
-        }
-        
-        /* CLASE: Para forzar el desvanecimiento (Fade-Out) */
-        .media-fade-out {
-            opacity: 0 !important;
-        }
-
-        /* VIDEOS - Expandir al máximo */
-        #mediaDisplay video {
-            width: auto;
-            height: 100vh;
-            object-fit: cover;
-            display: block;
-        }
-        /*Hola*/
-
-        #controls {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.9);
-            padding: 15px 30px;
-            border-radius: 30px;
-            display: flex;
-            gap: 20px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            z-index: 1000;
-        }
-
-        #controls:hover {
-            opacity: 1;
-        }
-
-        .control-btn {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 15px 25px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 18px;
-            min-width: 120px;
-            font-weight: bold;
-        }
-
-        .control-btn:hover {
-            background: #0056b3;
-        }
-
-        #fileCounter {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 12px 18px;
-            border-radius: 10px;
-            font-size: 16px;
-            z-index: 1000;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        #loading {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 24px;
-            text-align: center;
-            z-index: 1000;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 30px;
-            border-radius: 15px;
-        }
-
-        /* Overlay para controles táctiles */
-        #touchOverlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 500;
-        }
-
-        /* Zonas táctiles */
-        .touch-zone {
-            position: fixed;
-            height: 100vh;
-            width: 33vw;
-            top: 0;
-            z-index: 500;
-        }
-
-        #touchLeft {
-            left: 0;
-        }
-
-        #touchRight {
-            right: 0;
-        }
-
-        #touchCenter {
-            left: 33vw;
-            width: 34vw;
-        }
-    </style>
+#counter{
+  position:fixed;top:20px;right:20px;
+  background:rgba(0,0,0,.8);padding:12px 18px;
+  border-radius:10px;font-size:16px;z-index:1000;
+}
+#controls{
+  position:fixed;bottom:30px;left:50%;
+  transform:translateX(-50%);
+  background:rgba(0,0,0,.9);padding:15px 30px;
+  border-radius:30px;display:flex;gap:20px;
+  opacity:0;transition:opacity .3s;z-index:1000;
+}
+#controls:hover{opacity:1}
+.btn{
+  background:#007bff;color:#fff;border:none;
+  padding:15px 25px;border-radius:10px;
+  cursor:pointer;font-size:18px;min-width:120px;font-weight:bold;
+}
+.btn:hover{background:#0056b3}
+#loading{
+  position:fixed;inset:0;display:flex;
+  justify-content:center;align-items:center;
+  font-size:24px;background:rgba(0,0,0,.9);z-index:2000;text-align:center;
+}
+.zone{position:fixed;top:0;height:100vh;z-index:500}
+#zL{left:0;width:33vw}
+#zC{left:33vw;width:34vw}
+#zR{right:0;width:33vw}
+</style>
 </head>
 <body>
-    <div id="loading">Cargando...</div>
-    
-    <div id="container" class="hidden">
-        <div id="fileCounter"></div>
 
-        <div id="blurBackground"></div>
-        <div id="mediaDisplay">
-            </div>
+<div id="loading">Cargando...</div>
+<div id="blur"></div>
+<div id="blur-video"><video id="blur-vid" muted loop playsinline></video></div>
+<div id="counter"></div>
+<div id="display"></div>
 
-        <div id="controls">
-            <button class="control-btn" id="prevBtn">◀◀</button>
-            <button class="control-btn" id="playPauseBtn">⏸</button>
-            <button class="control-btn" id="nextBtn">▶▶</button>
-        </div>
+<div id="controls">
+  <button class="btn" id="btnPrev">◀◀</button>
+  <button class="btn" id="btnPlay">⏸</button>
+  <button class="btn" id="btnNext">▶▶</button>
+</div>
+<div class="zone" id="zL"></div>
+<div class="zone" id="zC"></div>
+<div class="zone" id="zR"></div>
 
-        <div id="touchOverlay">
-            <div class="touch-zone" id="touchLeft"></div>
-            <div class="touch-zone" id="touchCenter"></div>
-            <div class="touch-zone" id="touchRight"></div>
-        </div>
-    </div>
+<script>
+const FILES = [
+  {type:'image',path:'imagenes/a1.webp'},
+  {type:'image',path:'imagenes/a2.webp'},
+  {type:'image',path:'imagenes/a3.webp'},
+  {type:'image',path:'imagenes/a4.webp'},
+  {type:'image',path:'imagenes/a5.webp'},
+  {type:'image',path:'imagenes/a6.webp'},
+  {type:'image',path:'imagenes/a7.webp'},
+  {type:'image',path:'imagenes/a8.webp'},
+  {type:'image',path:'imagenes/a9.webp'},
+  {type:'image',path:'imagenes/a10.webp'},
+  {type:'image',path:'imagenes/b1.webp'},
+  {type:'image',path:'imagenes/b2.webp'},
+  {type:'image',path:'imagenes/b3.webp'},
+  {type:'image',path:'imagenes/b4.webp'},
+  {type:'image',path:'imagenes/b5.webp'},
+  {type:'image',path:'imagenes/b6.webp'},
+  {type:'image',path:'imagenes/b7.webp'},
+  {type:'image',path:'imagenes/b8.webp'},
+  {type:'image',path:'imagenes/b9.webp'},
+  {type:'image',path:'imagenes/b10.webp'},
+  {type:'image',path:'imagenes/b11.webp'},
+  {type:'image',path:'imagenes/b12.webp'},
+  {type:'video',path:'videos/video1.mp4'},
+  {type:'video',path:'videos/video2.mp4'},
+  {type:'video',path:'videos/video3.mp4'},
+  {type:'video',path:'videos/video4.mp4'},
+  {type:'video',path:'videos/video5.mp4'},
+  {type:'video',path:'videos/video6.mp4'},
+  {type:'video',path:'videos/video7.mp4'},
+  {type:'video',path:'videos/video8.mp4'},
+  {type:'video',path:'videos/video9.mp4'},
+  {type:'video',path:'videos/video10.mp4'},
+  {type:'video',path:'videos/video11.mp4'},
+];
 
-    <script>
-        class MediaPlayer {
-            constructor() {
-                this.mediaFiles = [];
-                this.currentIndex = 0;
-                this.isPlaying = true;
-                this.currentMedia = null;
-                this.slideInterval = null;
-                this.slideDuration = 5000;
-                this.videoEndedHandler = null;
+const $        = id => document.getElementById(id);
+const elDisp   = $('display');
+const elBlur   = $('blur');
+const elBlurBx = $('blur-video');
+const elBlurV  = $('blur-vid');
+const elCnt    = $('counter');
+const elCtrl   = $('controls');
+const elBtnPl  = $('btnPlay');
+const elLoad   = $('loading');
 
-                this.backgroundMusic = new Audio('onsupplymusic.mp3'); // Ruta de tu música
-                this.backgroundMusic.loop = true;
-                this.backgroundMusic.volume = 1;
+const music = new Audio('onsupplymusic.mp3');
+music.loop = true; music.volume = 1;
 
-                this.blurBackground = null;
+let files=[], idx=0, playing=true, current=null;
+let slideTimer=null, transitioning=false;
+const SLIDE_MS = 5000;
 
-                // ✅ PRIMERO inicializar elementos, LUEGO configurar eventos
-                this.initializeElements();
-                this.setupEventListeners();
-                this.loadMediaFiles();
-            }
+/* ── verificar archivos ── */
+async function init() {
+  const valid = [];
+  for (const f of FILES) {
+    try { const r = await fetch(f.path,{method:'HEAD'}); if(r.ok) valid.push(f); } catch(e){}
+  }
+  if (!valid.length) { elLoad.innerHTML='<p style="color:#f44">No se encontraron archivos.</p>'; return; }
+  files = valid;
+  elLoad.style.display = 'none';
+  load();
+}
 
-            initializeElements() {
-                // ✅ VERIFICAR QUE TODOS LOS ELEMENTOS EXISTAN
-                this.container = document.getElementById('container');
-                this.mediaDisplay = document.getElementById('mediaDisplay');
-                this.controls = document.getElementById('controls');
-                this.prevBtn = document.getElementById('prevBtn');
-                this.playPauseBtn = document.getElementById('playPauseBtn');
-                this.nextBtn = document.getElementById('nextBtn');
-                this.loading = document.getElementById('loading');
-                this.fileCounter = document.getElementById('fileCounter');
-                this.touchLeft = document.getElementById('touchLeft');
-                this.touchCenter = document.getElementById('touchCenter');
-                this.touchRight = document.getElementById('touchRight');
-                this.blurBackground = document.getElementById('blurBackground');
-                // ✅ VERIFICACIÓN DE ELEMENTOS
-                if (!this.container || !this.mediaDisplay || !this.controls) {
-                    console.error('Error: No se encontraron algunos elementos del DOM');
-                    return;
-                }
-            }
+/* ── limpiar display completamente ── */
+function clearDisplay() {
+  if (current) {
+    if (current.tagName === 'VIDEO') {
+      current.pause();
+      current.removeAttribute('src');
+      current.load();           // libera el recurso
+    }
+    current = null;
+  }
+  elDisp.innerHTML = '';        // elimina el elemento del DOM
+}
 
-            async enterFullScreen() {
-                try {
-                    // ✅ SOLO intentar pantalla completa después de interacción del usuario
-                    if (document.documentElement.requestFullscreen) {
-                        await document.documentElement.requestFullscreen();
-                    } else if (document.documentElement.webkitRequestFullscreen) {
-                        await document.documentElement.webkitRequestFullscreen();
-                    }
-                } catch (error) {
-                    console.log('Pantalla completa no disponible o requiere interacción del usuario');
-                }
-            }
+/* ── cargar índice actual ── */
+function load() {
+  if (!files.length) return;
+  clearTimer();
+  clearDisplay();               // siempre limpiar ANTES de agregar el nuevo
 
-            loadMediaFiles() {
-                try {
-                    // 🎯 AGREGA TUS ARCHIVOS AQUÍ
-                    this.mediaFiles = [
-                        // Imágenes
-                        { name: 'a1.webp', type: 'image', path: 'imagenes/a1.webp' },
-                        { name: 'a2.webp', type: 'image', path: 'imagenes/a2.webp' },
-                        { name: 'a3.webp', type: 'image', path: 'imagenes/a3.webp' },
-                        { name: 'a4.webp', type: 'image', path: 'imagenes/a4.webp' },
-                        { name: 'a5.webp', type: 'image', path: 'imagenes/a5.webp' },
-                        { name: 'a6.webp', type: 'image', path: 'imagenes/a6.webp' },
-                        { name: 'a7.webp', type: 'image', path: 'imagenes/a7.webp' },
-                        { name: 'a8.webp', type: 'image', path: 'imagenes/a8.webp' },
-                        { name: 'a9.webp', type: 'image', path: 'imagenes/a9.webp' },
-                        { name: 'a10.webp', type: 'image', path: 'imagenes/a10.webp' },
-                        { name: 'a11.webp', type: 'image', path: 'imagenes/a11.webp' },
-                        { name: 'a12.webp', type: 'image', path: 'imagenes/a12.webp' },
-                    //    { name: 'a13.webp', type: 'image', path: 'imagenes/a13.webp' },
-                    //    { name: 'a14.webp', type: 'image', path: 'imagenes/a14.webp' },
-                    //    { name: 'a15.webp', type: 'image', path: 'imagenes/a15.webp' },
-                    //    { name: 'a16.webp', type: 'image', path: 'imagenes/a16.webp' },
-                    //    { name: 'a17.webp', type: 'image', path: 'imagenes/a17.webp' },
-                    //    { name: 'a18.webp', type: 'image', path: 'imagenes/a18.webp' },
-                       // { name: 'a19.webp', type: 'image', path: 'imagenes/a19.webp' },
-                       // { name: 'a20.webp', type: 'image', path: 'imagenes/a20.webp' },
-                       // { name: 'a21.webp', type: 'image', path: 'imagenes/a21.webp' },
-                       // { name: 'a22.webp', type: 'image', path: 'imagenes/a22.webp' },
-                       // { name: 'a23.webp', type: 'image', path: 'imagenes/a23.webp' },
-                       // { name: 'a24.webp', type: 'image', path: 'imagenes/a24.webp' },
-                       // { name: 'a25.webp', type: 'image', path: 'imagenes/a25.webp' },
-                       // { name: 'a26.webp', type: 'image', path: 'imagenes/a26.webp' },
-                       // { name: 'a27.webp', type: 'image', path: 'imagenes/a27.webp' },
-                       // { name: 'a28.webp', type: 'image', path: 'imagenes/a28.webp' },
-                       // { name: 'a29.webp', type: 'image', path: 'imagenes/a29.webp' },
-                       // { name: 'a30.webp', type: 'image', path: 'imagenes/a30.webp' },
-                       // { name: 'a31.webp', type: 'image', path: 'imagenes/a31.webp' },
-                       // { name: 'a32.webp', type: 'image', path: 'imagenes/a32.webp' },
-                       // { name: 'a33.webp', type: 'image', path: 'imagenes/a33.webp' },
-                       // { name: 'a34.webp', type: 'image', path: 'imagenes/a34.webp' },
-                       // { name: 'a35.webp', type: 'image', path: 'imagenes/a35.webp' },
-                       // { name: 'a36.webp', type: 'image', path: 'imagenes/a36.webp' },
-                       // { name: 'a37.webp', type: 'image', path: 'imagenes/a37.webp' },
-                       // { name: 'a38.webp', type: 'image', path: 'imagenes/a38.webp' },
-                       // { name: 'a39.webp', type: 'image', path: 'imagenes/a39.webp' },
-                       // { name: 'a40.webp', type: 'image', path: 'imagenes/a40.webp' },
-                       // { name: 'a41.webp', type: 'image', path: 'imagenes/a41.webp' },
-                       // { name: 'a42.webp', type: 'image', path: 'imagenes/a42.webp' },
-                       // { name: 'a43.webp', type: 'image', path: 'imagenes/a43.webp' },
-                       // { name: 'a44.webp', type: 'image', path: 'imagenes/a44.webp' },
-                       // { name: 'a45.webp', type: 'image', path: 'imagenes/a45.webp' },
-                       // { name: 'a46.webp', type: 'image', path: 'imagenes/a46.webp' },
-                       // { name: 'a47.webp', type: 'image', path: 'imagenes/a47.webp' },
-                       // { name: 'a48.webp', type: 'image', path: 'imagenes/a48.webp' },
-                       // { name: 'a49.webp', type: 'image', path: 'imagenes/a49.webp' },
-                       // { name: 'a50.webp', type: 'image', path: 'imagenes/a50.webp' },
-                       // { name: 'a51.webp', type: 'image', path: 'imagenes/a51.webp' },
-                       // { name: 'a52.webp', type: 'image', path: 'imagenes/a52.webp' },
-                       // { name: 'a53.webp', type: 'image', path: 'imagenes/a53.webp' },
-                       // { name: 'a54.webp', type: 'image', path: 'imagenes/a54.webp' },
-                       // { name: 'a55.webp', type: 'image', path: 'imagenes/a55.webp' },
-                       // { name: 'a56.webp', type: 'image', path: 'imagenes/a56.webp' },
-                        
-                        // { name: 'onsupply.mp4', type: 'video', path: 'videos/onsupply.mp4' },
-                        { name: 'video1.mp4', type: 'video', path: 'videos/video1.mp4' },
-                        { name: 'video2.mp4', type: 'video', path: 'videos/video2.mp4' },
-                        { name: 'video3.mp4', type: 'video', path: 'videos/video3.mp4' },
-                        { name: 'video4.mp4', type: 'video', path: 'videos/video4.mp4' },
-                        { name: 'video5.mp4', type: 'video', path: 'videos/video5.mp4' },
-                        { name: 'video6.mp4', type: 'video', path: 'videos/video6.mp4' },
-                        { name: 'video7.mp4', type: 'video', path: 'videos/video7.mp4' },
-                        { name: 'video8.mp4', type: 'video', path: 'videos/video8.mp4' },
-                        { name: 'video9.mp4', type: 'video', path: 'videos/video9.mp4' },
-                        { name: 'video10.mp4', type: 'video', path: 'videos/video10.mp4' },
-                        { name: 'video11.mp4', type: 'video', path: 'videos/video11.mp4' },
-                    ];
+  const f = files[idx];
+  elCnt.textContent = `${idx+1} / ${files.length}`;
 
-                    this.checkExistingFiles().then(existingFiles => {
-                        this.mediaFiles = existingFiles;
-                        
-                        if (this.mediaFiles.length > 0) {
-                            this.showInterface();
-                            this.updateFileCounter();
-                            this.loadCurrentMedia();
-                        } else {
-                            this.showError('No se encontraron archivos. Verifica las rutas.');
-                        }
-                    });
+  if (f.type === 'image') {
+    // ocultar blur de video
+    elBlurBx.style.display = 'none';
+    elBlurV.pause();
+    elBlurV.removeAttribute('src');
+    music.play().catch(()=>{});
+    loadImage(f);
+  } else {
+    music.pause();
+    loadVideo(f);
+  }
+}
 
-                } catch (error) {
-                    this.showError('Error al cargar archivos: ' + error.message);
-                }
-            }
+/* ── imagen ── */
+function loadImage(f) {
+  const img = new Image();
+  img.onload = () => {
+    elBlur.style.backgroundImage = `url('${f.path}')`;
+    elDisp.appendChild(img);
+    current = img;
+    requestAnimationFrame(() => requestAnimationFrame(() => img.classList.add('visible')));
+    if (playing) startTimer();
+  };
+  img.onerror = () => advance(1);
+  img.src = f.path;
+}
 
-            async checkExistingFiles() {
-                const existingFiles = [];
-                
-                for (const file of this.mediaFiles) {
-                    try {
-                        const response = await fetch(file.path, { method: 'HEAD' });
-                        if (response.status === 200) {
-                            existingFiles.push(file);
-                            console.log('✅ Archivo encontrado:', file.path);
-                        }
-                    } catch (e) {
-                        console.log('❌ Archivo no encontrado:', file.path);
-                    }
-                }
-                
-                return existingFiles;
-            }
+/* ── video ── */
+function loadVideo(f) {
+  const v = document.createElement('video');
+  v.src = f.path;
+  v.autoplay = true;
+  v.muted = false;
+  v.playsInline = true;
+  v.setAttribute('playsinline','');
 
-            showInterface() {
-                if (this.loading && this.container) {
-                    this.loading.classList.add('hidden');
-                    this.container.classList.remove('hidden');
-                }
-            }
+  v.onloadeddata = () => {
+    // fondo blur con el mismo video
+    elBlur.style.backgroundImage = 'none';
+    elBlurV.src = f.path;
+    elBlurV.play().catch(()=>{});
+    elBlurBx.style.display = 'block';
 
-            loadCurrentMedia() {
-                if (this.mediaFiles.length === 0) return;
+    // agregar al display SOLO aquí, cuando ya está listo
+    elDisp.appendChild(v);
+    current = v;
+    v.play().catch(() => advance(1));
+  };
 
-                const file = this.mediaFiles[this.currentIndex];
-                console.log('Cargando archivo:', file.name, 'Índice:', this.currentIndex);
-                
-                if (file.type === 'video') {
-                    this.backgroundMusic.pause();
-                } else if (file.type === 'image') {
-                    this.backgroundMusic.play().catch(e => console.log('Audio requiere interacción del usuario'));
-                }
+  v.onended  = () => { music.play().catch(()=>{}); advance(1); };
+  v.onplay   = () => { playing=true;  elBtnPl.textContent='⏸'; };
+  v.onpause  = () => { playing=false; elBtnPl.textContent='▶'; };
+  v.onerror  = () => advance(1);
+}
 
-                if (this.mediaDisplay) {
-                    this.mediaDisplay.innerHTML = '';
-                }
-                
-                if (this.controls) {
-                    this.controls.style.display = 'flex';
-                }
+/* ── timer slideshow ── */
+function startTimer() {
+  clearTimer();
+  slideTimer = setTimeout(() => advance(1), SLIDE_MS);
+  playing = true; elBtnPl.textContent = '⏸';
+}
+function clearTimer() {
+  if (slideTimer) { clearTimeout(slideTimer); slideTimer=null; }
+}
 
-                if (this.videoEndedHandler && this.currentMedia) {
-                    this.currentMedia.removeEventListener('ended', this.videoEndedHandler);
-                }
+/* ── avanzar / retroceder ── */
+function advance(dir) {
+  if (transitioning) return;
+  const f = files[idx];
 
-                if (file.type === 'image') {
-                    this.loadImage(file);
-                } else if (file.type === 'video') {
-                    this.loadVideo(file);
-                }
+  if (f?.type === 'image' && current instanceof HTMLImageElement) {
+    transitioning = true;
+    clearTimer();
+    current.classList.remove('visible');
+    setTimeout(() => {
+      transitioning = false;
+      idx = (idx + dir + files.length) % files.length;
+      load();
+    }, 750);
+  } else {
+    idx = (idx + dir + files.length) % files.length;
+    load();
+  }
+}
 
-                this.updateFileCounter();
-            }
+/* ── play / pause ── */
+function togglePlay() {
+  const f = files[idx];
+  if (!f) return;
+  if (f.type === 'image') {
+    if (playing) { clearTimer(); playing=false; elBtnPl.textContent='▶'; }
+    else startTimer();
+  } else if (current instanceof HTMLVideoElement) {
+    current.paused ? current.play() : current.pause();
+  }
+}
 
-            loadImage(file) {
-                const img = new Image();
-                // Importante: No aplicamos la opacidad 0 hasta que esté cargada y lista para el Fade-In
-                img.style.opacity = '0';
-                
-                img.onload = () => {
-                    this.currentMedia = img;
-                    if (this.mediaDisplay) {
-                        this.mediaDisplay.appendChild(img);
-                    }
-                    if (this.blurBackground) {
-                        this.blurBackground.style.backgroundImage = `url('${file.path}')`;
-                    }
-                    
-                    // Aseguramos que la opacidad 0 inicial se haya aplicado antes de iniciar la transición
-                    // Luego activamos la transición a opacidad 1
-                    setTimeout(() => {
-                        img.classList.add('media-visible');
-                    }, 50);
+/* ── controles visibles temporalmente ── */
+let hideCtrl;
+function showControls() {
+  elCtrl.style.opacity='1';
+  clearTimeout(hideCtrl);
+  hideCtrl = setTimeout(() => elCtrl.style.opacity='0', 3000);
+}
 
-                    console.log('✅ Imagen cargada:', file.name);
-                    
-                    if (this.isPlaying) {
-                        console.log('🔄 Iniciando slideshow para imagen:', file.name);
-                        this.startSlideshow();
-                    }
-                };
-                img.onerror = () => {
-                    console.error('❌ Error cargando imagen:', file.name);
-                    this.nextMedia();
-                };
-                img.src = file.path;
-            }
+/* ── eventos ── */
+$('btnPrev').onclick = () => { advance(-1); showControls(); };
+$('btnNext').onclick = () => { advance(1);  showControls(); };
+elBtnPl.onclick      = () => { togglePlay(); showControls(); };
+$('zL').onclick = () => { advance(-1); showControls(); };
+$('zR').onclick = () => { advance(1);  showControls(); };
+$('zC').onclick = () => { togglePlay(); showControls(); };
 
-            loadVideo(file) {
-                this.stopSlideshow();
-                
-                const video = document.createElement('video');
-                video.src = file.path;
-                video.controls = false;
-                video.autoplay = true;
-                video.muted = false; 
-                video.playsInline = true;
-                
-                video.setAttribute('playsinline', '');
-                video.setAttribute('webkit-playsinline', '');
+document.addEventListener('keydown', e => {
+  if      (e.key==='ArrowLeft')  advance(-1);
+  else if (e.key==='ArrowRight') advance(1);
+  else if (e.key===' ')          { e.preventDefault(); togglePlay(); }
+});
 
-                video.onloadeddata = () => {
-                    this.currentMedia = video;
-                    if (this.mediaDisplay) {
-                        this.mediaDisplay.appendChild(video);
-                    }
-                    // Videos se ven inmediatamente, no usan fade-in
-                    
-                    this.videoEndedHandler = () => {
-                        console.log('⏭️ Video terminado, siguiente archivo');
-                        this.isPlaying = true; 
-                        this.backgroundMusic.play().catch(e => console.log('Error reanudando música'));
-                        this.nextMedia();
-                    };
-                    video.addEventListener('ended', this.videoEndedHandler);
+document.addEventListener('dblclick', () => {
+  (document.fullscreenElement
+    ? document.exitFullscreen()
+    : document.documentElement.requestFullscreen()
+  ).catch(()=>{});
+});
 
-                    video.play().then(() => {
-                        this.updatePlayPauseButton();
-                        console.log('🎬 Video reproduciéndose:', file.name);
-                    }).catch(error => {
-                        console.error('❌ Error reproduciendo video, se omitirá:', error);
-                        this.isPlaying = true;
-                        this.nextMedia();
-                    });
-                };
-
-                video.onplay = () => {
-                    this.isPlaying = true;
-                    this.updatePlayPauseButton();
-                };
-
-                video.onpause = () => {
-                    this.isPlaying = false;
-                    this.updatePlayPauseButton();
-                };
-
-                video.onerror = () => {
-                    console.error('❌ Error cargando video:', file.name);
-                    this.nextMedia();
-                };
-            }
-
-            startSlideshow() {
-                this.stopSlideshow();
-                
-                const currentFile = this.mediaFiles[this.currentIndex];
-                if (currentFile && currentFile.type === 'image') {
-                    console.log('🔄 Iniciando intervalo de slideshow para:', currentFile.name);
-                    
-                    this.slideInterval = setInterval(() => {
-                        console.log('⏰ Intervalo ejecutado, avanzando...');
-                        this.nextMedia();
-                    }, this.slideDuration);
-                    
-                    this.isPlaying = true;
-                    this.updatePlayPauseButton();
-                }
-            }
-
-            stopSlideshow() {
-                if (this.slideInterval) {
-                    console.log('🛑 Deteniendo slideshow');
-                    clearInterval(this.slideInterval);
-                    this.slideInterval = null;
-                }
-            }
-
-            togglePlayPause() {
-                const currentFile = this.mediaFiles[this.currentIndex];
-                
-                if (currentFile.type === 'image') {
-                    if (this.isPlaying) {
-                        this.stopSlideshow();
-                        this.isPlaying = false;
-                        console.log('⏸ Pausando slideshow');
-                    } else {
-                        this.startSlideshow();
-                        this.isPlaying = true;
-                        console.log('▶ Reanudando slideshow');
-                    }
-                } else if (currentFile.type === 'video') {
-                    const video = this.currentMedia;
-                    if (video && video.paused) {
-                        video.play().then(() => {
-                            this.isPlaying = true;
-                        });
-                    } else if (video) {
-                        video.pause();
-                        this.isPlaying = false;
-                    }
-                }
-                this.updatePlayPauseButton();
-            }
-            
-            // Función para manejar el desvanecimiento de salida (Fade-Out)
-            transitionOut(callback) {
-                this.stopSlideshow(); 
-                this.isPlaying = true;
-                this.updatePlayPauseButton();
-
-                const currentMediaElement = this.currentMedia;
-                
-                if (currentMediaElement && currentMediaElement.tagName === 'IMG') {
-                    console.log('🔄 Iniciando Fade-Out de la imagen actual...');
-                    
-                    // Aplicar clase de fade-out
-                    currentMediaElement.classList.remove('media-visible');
-                    currentMediaElement.classList.add('media-fade-out');
-
-                    // Esperar la duración de la transición (0.7s) + un pequeño buffer
-                    const transitionDurationMs = 750; 
-                    
-                    setTimeout(() => {
-                        console.log('✅ Fade-Out completado, cargando nuevo archivo.');
-                        // Eliminar el elemento después de que se desvanece
-                        if (currentMediaElement.parentNode === this.mediaDisplay) {
-                             this.mediaDisplay.removeChild(currentMediaElement);
-                        }
-                        callback();
-                    }, transitionDurationMs);
-                } else {
-                    // Si no es imagen (ej. es video), no hay transición de salida, avanzar inmediatamente
-                    callback();
-                }
-            }
-
-            nextMedia() {
-                console.log('➡️ Preparando avance al siguiente archivo');
-                
-                const currentFile = this.mediaFiles[this.currentIndex];
-                
-                if (currentFile && currentFile.type === 'image') {
-                    // Usar transitionOut para imágenes
-                    this.transitionOut(() => {
-                        this.currentIndex = (this.currentIndex + 1) % this.mediaFiles.length;
-                        this.loadCurrentMedia();
-                    });
-                } else {
-                    // Simplemente avanzar para videos
-                    this.currentIndex = (this.currentIndex + 1) % this.mediaFiles.length;
-                    this.loadCurrentMedia();
-                }
-            }
-
-            prevMedia() {
-                console.log('⬅️ Preparando retroceso al archivo anterior');
-
-                const currentFile = this.mediaFiles[this.currentIndex];
-
-                if (currentFile && currentFile.type === 'image') {
-                    // Usar transitionOut para imágenes
-                    this.transitionOut(() => {
-                        this.currentIndex = this.currentIndex > 0 ? 
-                            this.currentIndex - 1 : 
-                            this.mediaFiles.length - 1;
-                        this.loadCurrentMedia();
-                    });
-                } else {
-                    // Simplemente retroceder para videos
-                    this.currentIndex = this.currentIndex > 0 ? 
-                        this.currentIndex - 1 : 
-                        this.mediaFiles.length - 1;
-                    this.loadCurrentMedia();
-                }
-            }
-
-            updatePlayPauseButton() {
-                if (this.playPauseBtn) {
-                    this.playPauseBtn.textContent = this.isPlaying ? '⏸' : '▶';
-                }
-            }
-
-            updateFileCounter() {
-                if (this.fileCounter) {
-                    this.fileCounter.textContent = `${this.currentIndex + 1} / ${this.mediaFiles.length}`;
-                }
-            }
-
-            showError(message) {
-                if (this.loading) {
-                    this.loading.innerHTML = `
-                        <div style="color: #ff4444; text-align: center;">
-                            <h3>Error</h3>
-                            <p>${message}</p>
-                        </div>
-                    `;
-                }
-            }
-
-            setupEventListeners() {
-                // ✅ VERIFICAR QUE LOS ELEMENTOS EXISTAN ANTES DE AGREGAR EVENTOS
-                if (this.prevBtn) {
-                    this.prevBtn.addEventListener('click', () => this.prevMedia());
-                }
-                if (this.nextBtn) {
-                    this.nextBtn.addEventListener('click', () => this.nextMedia());
-                }
-                if (this.playPauseBtn) {
-                    this.playPauseBtn.addEventListener('click', () => this.togglePlayPause());
-                }
-                if (this.touchLeft) {
-                    this.touchLeft.addEventListener('click', () => this.prevMedia());
-                }
-                if (this.touchRight) {
-                    this.touchRight.addEventListener('click', () => this.nextMedia());
-                }
-                if (this.touchCenter) {
-                    this.touchCenter.addEventListener('click', () => this.togglePlayPause());
-                }
-
-                // Eventos de teclado
-                document.addEventListener('keydown', (e) => {
-                    switch(e.key) {
-                        case 'ArrowLeft':
-                            this.prevMedia();
-                            break;
-                        case 'ArrowRight':
-                            this.nextMedia();
-                            break;
-                        case ' ':
-                            e.preventDefault();
-                            this.togglePlayPause();
-                            break;
-                        case 'Escape':
-                            e.preventDefault();
-                            break;
-                    }
-                });
-
-                // Mostrar controles temporalmente
-                let controlsTimeout;
-                const showControlsTemporarily = () => {
-                    if (this.controls) {
-                        this.controls.style.opacity = '1';
-                        clearTimeout(controlsTimeout);
-                        controlsTimeout = setTimeout(() => {
-                            this.controls.style.opacity = '0';
-                        }, 3000);
-                    }
-                };
-
-                if (this.touchOverlay) {
-                    this.touchOverlay.addEventListener('click', showControlsTemporarily);
-                }
-
-                // Pantalla completa al hacer doble clic
-                document.addEventListener('dblclick', () => {
-                    this.enterFullScreen();
-                });
-            }
-        }
-
-        // ✅ INICIALIZAR CUANDO EL DOM ESTÉ LISTO
-        document.addEventListener('DOMContentLoaded', () => {
-            new MediaPlayer();
-        });
-    </script>
+init();
+</script>
 </body>
 </html>
-
-
-
