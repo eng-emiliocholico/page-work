@@ -30,18 +30,39 @@ html,body{background:#000;color:#fff;font-family:Arial,sans-serif;overflow:hidde
   pointer-events:none;
 }
 
+/* ── DISPLAY RESPONSIVO ── */
 #display{
   position:fixed;inset:0;
-  display:flex;justify-content:center;align-items:center;
+  display:flex;
+  justify-content:center;
+  align-items:center;
   z-index:1;
+  width:100vw;
+  height:100vh;
 }
+
+/* Imágenes: se ajustan sin cortar, respetando el aspecto */
 #display img{
-  max-width:90%;height:100vh;
+  max-width:100vw;
+  max-height:100vh;
+  width:auto;
+  height:auto;
   object-fit:contain;
-  opacity:0;transition:opacity .7s ease-in-out;
+  display:block;
+  opacity:0;
+  transition:opacity .7s ease-in-out;
 }
 #display img.visible{opacity:1}
-#display video{width:auto;height:100vh;object-fit:contain}
+
+/* Videos: igual, sin cortar */
+#display video{
+  max-width:100vw;
+  max-height:100vh;
+  width:auto;
+  height:auto;
+  object-fit:contain;
+  display:block;
+}
 
 #counter{
   position:fixed;top:20px;right:20px;
@@ -144,7 +165,6 @@ let files=[], idx=0, playing=true, current=null;
 let slideTimer=null, transitioning=false;
 const SLIDE_MS = 5000;
 
-/* ── verificar archivos ── */
 async function init() {
   const valid = [];
   for (const f of FILES) {
@@ -156,30 +176,27 @@ async function init() {
   load();
 }
 
-/* ── limpiar display completamente ── */
 function clearDisplay() {
   if (current) {
     if (current.tagName === 'VIDEO') {
       current.pause();
       current.removeAttribute('src');
-      current.load();           // libera el recurso
+      current.load();
     }
     current = null;
   }
-  elDisp.innerHTML = '';        // elimina el elemento del DOM
+  elDisp.innerHTML = '';
 }
 
-/* ── cargar índice actual ── */
 function load() {
   if (!files.length) return;
   clearTimer();
-  clearDisplay();               // siempre limpiar ANTES de agregar el nuevo
+  clearDisplay();
 
   const f = files[idx];
   elCnt.textContent = `${idx+1} / ${files.length}`;
 
   if (f.type === 'image') {
-    // ocultar blur de video
     elBlurBx.style.display = 'none';
     elBlurV.pause();
     elBlurV.removeAttribute('src');
@@ -191,7 +208,6 @@ function load() {
   }
 }
 
-/* ── imagen ── */
 function loadImage(f) {
   const img = new Image();
   img.onload = () => {
@@ -205,7 +221,6 @@ function loadImage(f) {
   img.src = f.path;
 }
 
-/* ── video ── */
 function loadVideo(f) {
   const v = document.createElement('video');
   v.src = f.path;
@@ -215,13 +230,11 @@ function loadVideo(f) {
   v.setAttribute('playsinline','');
 
   v.onloadeddata = () => {
-    // fondo blur con el mismo video
     elBlur.style.backgroundImage = 'none';
     elBlurV.src = f.path;
     elBlurV.play().catch(()=>{});
     elBlurBx.style.display = 'block';
 
-    // agregar al display SOLO aquí, cuando ya está listo
     elDisp.appendChild(v);
     current = v;
     v.play().catch(() => advance(1));
@@ -233,7 +246,6 @@ function loadVideo(f) {
   v.onerror  = () => advance(1);
 }
 
-/* ── timer slideshow ── */
 function startTimer() {
   clearTimer();
   slideTimer = setTimeout(() => advance(1), SLIDE_MS);
@@ -243,7 +255,6 @@ function clearTimer() {
   if (slideTimer) { clearTimeout(slideTimer); slideTimer=null; }
 }
 
-/* ── avanzar / retroceder ── */
 function advance(dir) {
   if (transitioning) return;
   const f = files[idx];
@@ -263,7 +274,6 @@ function advance(dir) {
   }
 }
 
-/* ── play / pause ── */
 function togglePlay() {
   const f = files[idx];
   if (!f) return;
@@ -275,7 +285,6 @@ function togglePlay() {
   }
 }
 
-/* ── controles visibles temporalmente ── */
 let hideCtrl;
 function showControls() {
   elCtrl.style.opacity='1';
@@ -283,7 +292,6 @@ function showControls() {
   hideCtrl = setTimeout(() => elCtrl.style.opacity='0', 3000);
 }
 
-/* ── eventos ── */
 $('btnPrev').onclick = () => { advance(-1); showControls(); };
 $('btnNext').onclick = () => { advance(1);  showControls(); };
 elBtnPl.onclick      = () => { togglePlay(); showControls(); };
